@@ -57,19 +57,23 @@ CREATE TABLE site_settings (
 INSERT INTO site_settings () VALUES ();
 
 -- ---------------------------------------------------------------------
--- 3. AMENITIES
+-- 3. AMENITIES (single table, 2 categories: home + room amenities)
 -- ---------------------------------------------------------------------
 DROP TABLE IF EXISTS amenities;
 CREATE TABLE amenities (
   id            INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-  slug          VARCHAR(50) NOT NULL UNIQUE,
+  category      ENUM('home','room') NOT NULL DEFAULT 'home',
+  slug          VARCHAR(50) NOT NULL,
   title         VARCHAR(100) NOT NULL,
-  description   VARCHAR(255) NOT NULL,
-  icon_name     ENUM('pool','parking','wifi','ev','kitchen','bbq') NOT NULL,
+  description   VARCHAR(255) NULL,
+  icon_key      VARCHAR(40) NOT NULL,
   sort_order    INT NOT NULL DEFAULT 0,
   is_published  TINYINT(1) NOT NULL DEFAULT 1,
   created_at    DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  updated_at    DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+  updated_at    DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  UNIQUE KEY uk_slug_category (slug, category),
+  KEY idx_category (category),
+  KEY idx_published (is_published)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ---------------------------------------------------------------------
@@ -98,8 +102,12 @@ CREATE TABLE rooms (
   intro_heading         VARCHAR(200) NULL,
   intro_paragraph1      TEXT NULL,
   intro_paragraph2      TEXT NULL,
+  intro_feature_tiles_json JSON NULL,
   stay_info_json        JSON NULL,
   highlight_json        JSON NULL,
+  primary_image         VARCHAR(255) NULL,
+  gallery_json          JSON NULL,
+  related_room_ids_json JSON NULL,
   sort_order            INT NOT NULL DEFAULT 0,
   is_featured           TINYINT(1) NOT NULL DEFAULT 0,
   is_published          TINYINT(1) NOT NULL DEFAULT 1,
@@ -164,7 +172,6 @@ CREATE TABLE gallery_media (
   alt         VARCHAR(255) NOT NULL,
   description VARCHAR(500) NULL,
   media_type  ENUM('image','video') NOT NULL DEFAULT 'image',
-  duration    VARCHAR(30) NULL,
   layout      ENUM('wide','standard','tall') NOT NULL DEFAULT 'standard',
   route       VARCHAR(255) NULL,
   sort_order  INT NOT NULL DEFAULT 0,
@@ -180,12 +187,21 @@ CREATE TABLE gallery_media (
 -- ---------------------------------------------------------------------
 DROP TABLE IF EXISTS hero_slides;
 CREATE TABLE hero_slides (
-  id          INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-  image       VARCHAR(255) NOT NULL,
-  alt         VARCHAR(255) NOT NULL,
-  sort_order  INT NOT NULL DEFAULT 0,
-  is_published TINYINT(1) NOT NULL DEFAULT 1,
-  created_at  DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+  id             INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  slug           VARCHAR(80) NOT NULL,
+  image          VARCHAR(255) NOT NULL,
+  alt            VARCHAR(255) NOT NULL,
+  eyebrow        VARCHAR(80) NOT NULL,
+  heading_line_1 VARCHAR(100) NOT NULL,
+  heading_line_2 VARCHAR(100) NOT NULL,
+  description    VARCHAR(500) NOT NULL,
+  sort_order     INT NOT NULL DEFAULT 0,
+  is_published   TINYINT(1) NOT NULL DEFAULT 1,
+  created_at     DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at     DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  UNIQUE KEY uk_slug (slug),
+  KEY idx_published (is_published),
+  KEY idx_sort_order (sort_order)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ---------------------------------------------------------------------
@@ -311,6 +327,7 @@ CREATE TABLE contact_inquiries (
   status      ENUM('new','read','replied','archived') NOT NULL DEFAULT 'new',
   is_spam     TINYINT(1) NOT NULL DEFAULT 0,
   reply_sent  TINYINT(1) NOT NULL DEFAULT 0,
+  extra_json  JSON NULL,
   created_at  DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at  DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   KEY idx_status (status),

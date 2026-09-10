@@ -47,3 +47,10 @@ out/
 
 # ---- Misc OS generated during development ----
 nodemon-debug.log
+
+# ---- User-uploaded files ----
+# Never commit photos/documents uploaded by the admin.
+# Keep the folder itself with the .gitkeep placeholder so
+# Express static + multer diskStorage work on fresh clones.
+uploads/*
+!uploads/.gitkeep

@@ -29,6 +29,21 @@ const config = {
   },
 
   corsOrigin: process.env.CORS_ORIGIN || "http://localhost:3000",
+
+  corsOriginList: (() => {
+    const raw = process.env.CORS_ORIGIN || "http://localhost:3000,http://localhost:3001";
+    return raw
+      .split(",")
+      .map((o) => o.trim())
+      .filter(Boolean)
+      .concat([
+        "http://localhost:3000",
+        "http://localhost:3001",
+        "http://127.0.0.1:3000",
+        "http://127.0.0.1:3001",
+      ])
+      .filter((v, i, arr) => arr.indexOf(v) === i);
+  })(),
 };
 
 export default config;
