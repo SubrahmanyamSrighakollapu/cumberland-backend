@@ -32,19 +32,37 @@ function parseBoolean(b, fallback = false) {
 
 function parseJsonArray(raw, fallback = []) {
   if (!raw) return fallback;
-  if (Array.isArray(raw)) return raw;
+  if (Array.isArray(raw)) {
+    return raw
+      .map((x) => String(x).trim().replace(/^['"]+|['"]+$/g, ""))
+      .filter(Boolean);
+  }
+  const str = String(raw).trim();
+  if (!str) return fallback;
   try {
-    const parsed = JSON.parse(String(raw));
-    return Array.isArray(parsed) ? parsed : fallback;
-  } catch {
-    if (typeof raw === "string") {
-      return raw
-        .split(/,|\n/)
-        .map((x) => x.trim())
+    const parsed = JSON.parse(str);
+    if (Array.isArray(parsed)) {
+      return parsed
+        .map((x) => String(x).trim().replace(/^['"]+|['"]+$/g, ""))
         .filter(Boolean);
     }
-    return fallback;
+  } catch {
+    try {
+      const fixedStr = str.replace(/'/g, '"');
+      const parsed = JSON.parse(fixedStr);
+      if (Array.isArray(parsed)) {
+        return parsed
+          .map((x) => String(x).trim().replace(/^['"]+|['"]+$/g, ""))
+          .filter(Boolean);
+      }
+    } catch {
+      return str
+        .split(/,|\n/)
+        .map((x) => x.trim().replace(/^['"]+|['"]+$/g, ""))
+        .filter(Boolean);
+    }
   }
+  return fallback;
 }
 
 function parseFeatureTiles(raw, fallback = []) {
@@ -353,10 +371,13 @@ export const updateRoom = async (req, res) => {
       data.featureTiles && data.featureTiles.length
         ? JSON.stringify(data.featureTiles)
         : existing.intro_feature_tiles_json || null;
+    const existingHighlights = parseJsonArray(existing.highlight_json, []);
     const highlightsJson =
       data.highlightJson && data.highlightJson.length
         ? JSON.stringify(data.highlightJson)
-        : existing.highlight_json || null;
+        : existingHighlights.length
+        ? JSON.stringify(existingHighlights)
+        : null;
     const stayInfoJson =
       data.stayInfoJson !== undefined
         ? data.stayInfoJson
