@@ -13,15 +13,6 @@ export const getStats = async (req, res) => {
     const [amenityRows] = await db.query(
       "SELECT COUNT(*) as count FROM amenities"
     );
-    const [wineryRows] = await db.query(
-      "SELECT COUNT(*) as count FROM wineries"
-    );
-    const [venueRows] = await db.query(
-      "SELECT COUNT(*) as count FROM dining_venues"
-    );
-    const [activityRows] = await db.query(
-      "SELECT COUNT(*) as count FROM activities"
-    );
     const [inquiryRows] = await db.query(
       "SELECT COUNT(*) as count FROM contact_inquiries WHERE status = 'new'"
     );
@@ -29,14 +20,14 @@ export const getStats = async (req, res) => {
     return sendSuccess(
       res,
       {
-        rooms: roomRows[0].count,
-        gallery: galleryRows[0].count,
-        testimonials: testimonialRows[0].count,
-        amenities: amenityRows[0].count,
-        wineries: wineryRows[0].count,
-        diningVenues: venueRows[0].count,
-        activities: activityRows[0].count,
-        newInquiries: inquiryRows[0].count,
+        rooms: roomRows[0]?.count || 0,
+        gallery: galleryRows[0]?.count || 0,
+        testimonials: testimonialRows[0]?.count || 0,
+        amenities: amenityRows[0]?.count || 0,
+        wineries: 0,
+        diningVenues: 0,
+        activities: 0,
+        newInquiries: inquiryRows[0]?.count || 0,
       },
       "Dashboard stats retrieved"
     );
@@ -45,3 +36,4 @@ export const getStats = async (req, res) => {
     return sendError(res, "Failed to load dashboard stats.", 500);
   }
 };
+

@@ -13,8 +13,8 @@ export const login = async (req, res) => {
 
   try {
     const [users] = await db.query(
-      "SELECT id, name, email, password, role, is_active FROM admin_users WHERE email = ?",
-      [email.trim().toLowerCase()]
+      "SELECT id, name, email, password, role, is_active FROM admin_users WHERE LOWER(email) = LOWER(?)",
+      [email.trim()]
     );
 
     if (users.length === 0) {
@@ -88,16 +88,17 @@ export const getMe = async (req, res) => {
 
 export const changePassword = async (req, res) => {
   const { currentPassword, newPassword, confirmPassword } = req.body;
+  const targetConfirm = confirmPassword ?? newPassword;
 
-  if (!currentPassword || !newPassword || !confirmPassword) {
-    return sendError(res, "All password fields are required.", 400);
+  if (!currentPassword || !newPassword) {
+    return sendError(res, "Current password and new password are required.", 400);
   }
 
   if (newPassword.length < 8) {
     return sendError(res, "New password must be at least 8 characters.", 400);
   }
 
-  if (newPassword !== confirmPassword) {
+  if (newPassword !== targetConfirm) {
     return sendError(res, "New password and confirmation do not match.", 400);
   }
 
