@@ -190,6 +190,18 @@ export const createAmenity = asyncHandler(async (req, res) => {
       409
     );
 
+  const [dupOrder] = await db.query(
+    "SELECT id, title FROM amenities WHERE category = ? AND sort_order = ? LIMIT 1",
+    [data.category, data.sortOrder]
+  );
+  if (dupOrder?.[0]) {
+    return sendError(
+      res,
+      `Order number ${data.sortOrder} is already in use by "${dupOrder[0].title || 'another amenity'}" in category "${data.category}". Please choose a unique order number.`,
+      409
+    );
+  }
+
   const insertSql = `INSERT INTO amenities
     (category, slug, title, description, icon_key, sort_order, is_published)
     VALUES (?, ?, ?, ?, ?, ?, ?)`;
@@ -239,6 +251,19 @@ export const updateAmenity = asyncHandler(async (req, res) => {
         `Another amenity with slug "${slug}" already exists in category ${category}.`,
         409
       );
+  }
+
+  const nextSortOrder = data.sortOrder !== undefined ? data.sortOrder : current.sort_order;
+  const [dupOrder] = await db.query(
+    "SELECT id, title FROM amenities WHERE category = ? AND sort_order = ? AND id <> ? LIMIT 1",
+    [category, nextSortOrder, id]
+  );
+  if (dupOrder?.[0]) {
+    return sendError(
+      res,
+      `Order number ${nextSortOrder} is already in use by "${dupOrder[0].title || 'another amenity'}" in category "${category}". Please choose a unique order number.`,
+      409
+    );
   }
 
   const next = {

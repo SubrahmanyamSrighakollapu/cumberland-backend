@@ -85,6 +85,36 @@ function parseStayInfo(raw, fallback = null) {
   }
 }
 
+function parseGallery(raw, fallback = []) {
+  if (!raw) return fallback;
+  let arr = raw;
+  if (typeof raw === "string") {
+    try {
+      arr = JSON.parse(raw);
+    } catch {
+      return fallback;
+    }
+  }
+  if (!Array.isArray(arr)) return fallback;
+  return arr
+    .map((item) => {
+      if (!item) return null;
+      if (typeof item === "string") {
+        const trimmed = item.trim();
+        if (!trimmed) return null;
+        return { src: trimmed, alt: "" };
+      }
+      if (typeof item === "object" && item.src) {
+        return {
+          src: String(item.src).trim(),
+          alt: item.alt ? String(item.alt).trim() : "",
+        };
+      }
+      return null;
+    })
+    .filter(Boolean);
+}
+
 function validatePayload(body, requireAll = true) {
   const errors = [];
 
@@ -293,7 +323,7 @@ export const createRoom = async (req, res) => {
       data.highlightJson && data.highlightJson.length ? JSON.stringify(data.highlightJson) : null;
     const stayInfoJson = data.stayInfoJson ? JSON.stringify(data.stayInfoJson) : null;
 
-    const galleryRaw = parseJsonArray(req.body.gallery, []);
+    const galleryRaw = parseGallery(req.body.gallery, []);
     const primaryImageRaw = req.body.primaryImage ? String(req.body.primaryImage).trim() : null;
     const galleryJson = galleryRaw.length ? JSON.stringify(galleryRaw) : null;
     const relatedRaw = parseJsonArray(req.body.relatedRoomIds, []).map(String);
@@ -385,12 +415,10 @@ export const updateRoom = async (req, res) => {
           : null
         : existing.stay_info_json || null;
 
-    const galleryRaw = req.body.gallery !== undefined ? parseJsonArray(req.body.gallery, []) : null;
-    const galleryJson = galleryRaw
-      ? galleryRaw.length
-        ? JSON.stringify(galleryRaw)
-        : null
-      : existing.gallery_json || null;
+    const galleryRaw = req.body.gallery !== undefined ? parseGallery(req.body.gallery, []) : null;
+    const galleryJson = galleryRaw !== null
+      ? (galleryRaw.length ? JSON.stringify(galleryRaw) : null)
+      : (existing.gallery_json || null);
 
     const primaryImageRaw =
       req.body.primaryImage !== undefined

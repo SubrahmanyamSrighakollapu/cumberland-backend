@@ -235,6 +235,19 @@ export const createHeroSlide = asyncHandler(async (req, res) => {
     return sendError(res, `A hero slide with slug "${data.slug}" already exists.`, 409);
   }
 
+  const [dupOrder] = await db.query(
+    "SELECT id, heading_line_1, eyebrow FROM hero_slides WHERE sort_order = ? LIMIT 1",
+    [data.sortOrder]
+  );
+  if (dupOrder?.[0]) {
+    if (req.file?.filename) deleteUploadedFile(req.file.filename);
+    return sendError(
+      res,
+      `Order number ${data.sortOrder} is already in use by another hero slide. Please choose a unique order number.`,
+      409
+    );
+  }
+
   const sql = `INSERT INTO hero_slides
     (slug, image, alt, eyebrow, heading_line_1, heading_line_2, description, sort_order, is_published)
     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`;
@@ -287,6 +300,20 @@ export const updateHeroSlide = asyncHandler(async (req, res) => {
       if (req.file?.filename) deleteUploadedFile(req.file.filename);
       return sendError(res, `Another hero slide with slug "${slug}" already exists.`, 409);
     }
+  }
+
+  const nextSortOrder = data.sortOrder !== undefined ? data.sortOrder : Number(current.sort_order ?? 0);
+  const [dupOrder] = await db.query(
+    "SELECT id FROM hero_slides WHERE sort_order = ? AND id <> ? LIMIT 1",
+    [nextSortOrder, id]
+  );
+  if (dupOrder?.[0]) {
+    if (req.file?.filename) deleteUploadedFile(req.file.filename);
+    return sendError(
+      res,
+      `Order number ${nextSortOrder} is already in use by another hero slide. Please choose a unique order number.`,
+      409
+    );
   }
 
   const nextImage = data.image && data.image.length > 0 ? data.image : current.image;

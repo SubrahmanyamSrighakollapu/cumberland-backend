@@ -125,6 +125,18 @@ export const createFaq = async (req, res) => {
       return sendError(res, errors.join(" "), 400);
     }
 
+    const [dupOrder] = await db.query(
+      "SELECT id, question FROM faq_items WHERE sort_order = ? LIMIT 1",
+      [data.sort_order]
+    );
+    if (dupOrder?.[0]) {
+      return sendError(
+        res,
+        `Order number ${data.sort_order} is already in use by another FAQ. Please choose a unique order number.`,
+        409
+      );
+    }
+
     const [result] = await db.query(
       `INSERT INTO faq_items
          (question, answer, category, sort_order, is_published)
@@ -163,6 +175,20 @@ export const updateFaq = async (req, res) => {
     const { errors, data } = validateFaqPayload(req.body, false);
     if (errors.length > 0) {
       return sendError(res, errors.join(" "), 400);
+    }
+
+    if (data.sort_order !== undefined) {
+      const [dupOrder] = await db.query(
+        "SELECT id, question FROM faq_items WHERE sort_order = ? AND id <> ? LIMIT 1",
+        [data.sort_order, id]
+      );
+      if (dupOrder?.[0]) {
+        return sendError(
+          res,
+          `Order number ${data.sort_order} is already in use by another FAQ. Please choose a unique order number.`,
+          409
+        );
+      }
     }
 
     const sets = [];
